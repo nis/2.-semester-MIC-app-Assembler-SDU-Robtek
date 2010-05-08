@@ -25,7 +25,7 @@
 .def ZEROPOINT = R28	; This is where the signal starts. Used in auto-zero-cycle
 
 .def MYSTATE = R31		; State register:
-						; | zerocycle set if run | show result if set | ...
+						; | 7 zerocycle set if run | 6 show result if set | 5 ADC has been run | ...
 
 .org 0x00
 	jmp Main
@@ -78,7 +78,7 @@ Main:
 	ldi ASCII_C_3, 0x30
 	ldi READINGL, 0
 	ldi READINGH, 0
-	ldi MYSTATE, 0			; Reset state.
+	ldi MYSTATE, 0b00000000			; Reset state.
 	
 	call INITDISPLAY
 	
@@ -90,8 +90,12 @@ Main:
 	;ldi TEMP_COUNT, 0
 
 here:	
+	sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
+	call set_zeropoint
+	
 	sbrc MYSTATE, 6		; Show the current value
 	call display_current_value
+	
 	jmp here
 
 set_zeropoint:
@@ -99,26 +103,20 @@ set_zeropoint:
 	ror READINGL
 	lsr READINGH	; Divider med 4
 	ror READINGL
-	mov READINGL, ZEROPOINT
+	mov ZEROPOINT, READINGL
 	cbr MYSTATE, 0b10000000
 	ret
 
 adc_int:
 	in READINGL,adcl 	; Lower byte of reading
 	in READINGH,adch 	; Higher byte of reading
-	sbrc MYSTATE, 7		; Run zero-cycle
-	call set_zeropoint
+	;sbrc MYSTATE, 7		; Run zero-cycle as this is the first reading we get from the ADC
+	;call set_zeropoint
 	sbi adcsra,adsc 	; Restart ADC
+	sbr MYSTATE, 0b00100000
 	reti
 
 timer_int:
-;	lsr READINGH	; Divider med 2
-;	ror READINGL
-;	lsr READINGH	; Divider med 4
-;	ror READINGL
-;	mov NUM, READINGL
-;	sub NUM, ZEROPOINT
-;	call display_current_value
 	sbr MYSTATE, 0b01000000 		; Time to show the value
 	reti
 
@@ -128,6 +126,7 @@ display_current_value:
 	lsr READINGH	; Divider med 4
 	ror READINGL
 	mov NUM, READINGL
+	sub NUM, ZEROPOINT
 	ldi DISPLAY_DATA, 0xC0
 	call cmdwrt
 	call delay_2ms
