@@ -19,8 +19,8 @@ Bin2ascii:
 	ret
 	
 Bin2asciiOLD:
-	ldi XL, LOW(ASCII_RESULT)		; Save to here
-	ldi XH, HIGH(ASCII_RESULT)
+;	ldi XL, LOW(ASCII_RESULT)		; Save to here
+;	ldi XH, HIGH(ASCII_RESULT)
 	ldi DENOMINATOR, 10
 	rcall Divide
 	ori NUM, 0x30
