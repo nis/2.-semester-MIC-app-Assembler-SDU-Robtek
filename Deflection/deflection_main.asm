@@ -2,7 +2,7 @@
 .include "../includes/lcdDef.inc"	; Display definitions.
 .equ ADCSRA = 0x06	; Kun nødvendig på Mac.
 
-.equ timer_t = 200
+.equ timer_t = 1000
 
 .def TEMP = R16 			; Temp register
 .def DELAY_COUNTER = R17  	; Counter used by delays
@@ -24,24 +24,19 @@
 .def READINGH = R27
 .def ZEROPOINT = R28	; This is where the signal starts. Used in auto-zero-cycle
 
-.def MYSTATE = R31		; State register:
+.def MYSTATE = R29		; State register:
 						; | 7 zerocycle set if run | 6 show result if set | 5 ADC has been run | ...
 
 .org 0x00
 	jmp Main
-;.org 0x02
-;	jmp Reset
+.org 0x02
+	jmp Main
 .org 0x14
 	jmp timer_int
 .org ADCCaddr
 	jmp adc_int
 
 .org 0x100
-
-;Reset:
-;	inc TEMP_COUNT
-;	call display_current_value
-;	reti
 	
 Main:	
 	cli
@@ -83,12 +78,9 @@ Main:
 	call INITDISPLAY
 	
 	call display_deflection_header
-	;call display_current_value
 	
 	SEI
 	
-	;ldi TEMP_COUNT, 0
-
 here:	
 	sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
 	call set_zeropoint
@@ -110,8 +102,6 @@ set_zeropoint:
 adc_int:
 	in READINGL,adcl 	; Lower byte of reading
 	in READINGH,adch 	; Higher byte of reading
-	;sbrc MYSTATE, 7		; Run zero-cycle as this is the first reading we get from the ADC
-	;call set_zeropoint
 	sbi adcsra,adsc 	; Restart ADC
 	sbr MYSTATE, 0b00100000
 	reti
@@ -126,10 +116,35 @@ display_current_value:
 	lsr READINGH	; Divider med 4
 	ror READINGL
 	mov NUM, READINGL
-	sub NUM, ZEROPOINT
+	
 	ldi DISPLAY_DATA, 0xC0
 	call cmdwrt
 	call delay_2ms
+	
+	;call show_negative_number
+	
+	cp NUM, ZEROPOINT
+	brlo negative_number 		; Branch to display a positive number
+
+positive_number:
+	sub NUM, ZEROPOINT
+	rjmp display_it
+		
+negative_number:
+	LDI R31,HIGH(MINUS_SIGN<<1)		;
+	LDI R30,LOW(MINUS_SIGN<<1)		; Display the minus-sign
+	call display_message
+	;mov TEMP, ZEROPOINT
+	;sub TEMP, NUM
+	;mov NUM, TEMP
+	rjmp display_it			
+	
+display_it:
+	call display_value
+	ret
+
+
+display_value:
 	call Bin2ascii
 	mov	DISPLAY_DATA, ASCII_C_3
 	call datawrt
@@ -139,9 +154,13 @@ display_current_value:
 	call delay_2ms
 	mov	DISPLAY_DATA, ASCII_C_1
 	call datawrt
+	call delay_2ms
+	LDI R31,HIGH(SPACE<<1)		;
+	LDI R30,LOW(SPACE<<1)		; Display the space
+	call display_message
 	cbr MYSTATE, 0b01000000
 	ret
-	
+
 display_deflection_header:
 	ldi POS, 0x80
 	LDI R31,HIGH(LINE_1<<1)
