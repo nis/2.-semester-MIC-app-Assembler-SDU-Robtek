@@ -2,30 +2,30 @@
 .include "../includes/lcdDef.inc"	; Display definitions.
 .equ ADCSRA = 0x06	; Kun nødvendig på Mac.
 
-.equ timer_t = 1000
+.equ timer_t = 200
 
-.def TEMP = R16 			; Temp register
-.def DELAY_COUNTER = R17  	; Counter used by delays
-.def DISPLAY_DATA = R18		; Data to display
-.def POS = R19 				; What position on the LCD we want to write to.
+.def TEMP1 = R16 			; Temp register
+.def TEMP2 = R17 			; Temp register
+.def DELAY_COUNTER = R18  	; Counter used by delays
+.def DISPLAY_DATA = R19		; Data to display
+.def MYSTATE = R20			; State register:
+							; 	7 zerocycle set if run
+							;	6 show result if set
+							;	5 ADC has been run
 
 ; bin2ascii registers
-.def NUM = R20				; Number to convert
-.def DENOMINATOR = R21
-.def QUOTIENT = R22
-;.equ ASCII_RESULT = 0x210	; Result
-.def ASCII_C_1 = R23
-.def ASCII_C_2 = R24
-.def ASCII_C_3 = R25
+.def NUM = R21				; Number to convert
 
-; Other registers
-;.def TEMP_COUNT = R26
-.def READINGL = R26
-.def READINGH = R27
-.def ZEROPOINT = R28	; This is where the signal starts. Used in auto-zero-cycle
+; Data registers
+.def DATAL = R22
+.def DATAH = R23
+.def ZEROPOINT = R24	; This is where the signal starts. Used in auto-zero-cycle
 
-.def MYSTATE = R29		; State register:
-						; | 7 zerocycle set if run | 6 show result if set | 5 ADC has been run | ...
+
+; Memory
+.equ ASCII_C_1 = 0x210
+.equ ASCII_C_2 = 0x211
+.equ ASCII_C_3 = 0x212
 
 .equ C10	= 0x220		; Line 1
 .equ C11	= 0x221		; 
@@ -65,102 +65,130 @@
 	jmp Main
 .org 0x02
 	jmp Main
-;.org 0x14
-;	jmp timer_int
-;.org ADCCaddr
-;	jmp adc_int
+.org 0x14
+	jmp timer_int
+.org ADCCaddr
+	jmp adc_int
 
 .org 0x100
 	
 Main:	
-	;cli
-	ldi TEMP,high(RAMEND) ; Init stack
-	out SPH,TEMP
-	ldi TEMP,low(RAMEND)
-	out SPL,TEMP
+	cli
+	ldi TEMP1, high(RAMEND) ; Init stack
+	out SPH,TEMP1
+	ldi TEMP1, low(RAMEND)
+	out SPL,TEMP1
 	
-	;SBI PORTD,2		; Init INT0-knap
-	;LDI TEMP,1<<INT0
-	;OUT GICR,TEMP
+	SBI PORTD,2		; Init INT0-knap
+	LDI TEMP1, 1<<INT0
+	OUT GICR,TEMP1
 	
-	;ldi TEMP,0b10001010
-	;out adcsra,TEMP		; enable ADC og ck/128
-	;ldi TEMP,0b11000000
-	;out admux,TEMP		; loader admux
-    ;
-	;sbi adcsra,adsc	; start konvertering
-	;
-	;ldi TEMP,(1<<OCIE1A)
-  	;out TIMSK,TEMP  ; Enable Timer1 match Interrupt
-  	;ldi TEMP,0x0
-  	;out TCCR1A,TEMP
-  	;ldi TEMP,0xD
-  	;out TCCR1B,TEMP ; Prescaler 1:1024, CTC mode
-  	;ldi TEMP,HIGH(timer_t) ; High byte
-  	;OUT OCR1AH,TEMP
-  	;ldi TEMP,LOW(timer_t) ; Low byte
-  	;OUT OCR1AL,TEMP
-  	;ldi TEMP,0x0
+	ldi TEMP1, 0b10001111
+	out adcsra,TEMP1	; enable ADC og ck/128
+	ldi TEMP1, 0b11000000
+	out admux,TEMP1		; loader admux
+    
+	sbi adcsra,adsc	; start konvertering
+	
+	ldi TEMP1, (1<<OCIE1A)
+  	out TIMSK,TEMP1  ; Enable Timer1 match Interrupt
+  	ldi TEMP1, 0x0
+  	out TCCR1A,TEMP1
+  	ldi TEMP1, 0xD
+  	out TCCR1B,TEMP1 ; Prescaler 1:1024, CTC mode
+  	ldi TEMP1, HIGH(timer_t) ; High byte
+  	OUT OCR1AH,TEMP1
+  	ldi TEMP1, LOW(timer_t) ; Low byte
+  	OUT OCR1AL,TEMP1
+  	ldi TEMP1, 0x0
 	
 	;ldi ASCII_C_1, 0x30		; Init Ascii cifres.
 	;ldi ASCII_C_2, 0x30
 	;ldi ASCII_C_3, 0x30
-	;ldi READINGL, 0
-	;ldi READINGH, 0
-	;ldi MYSTATE, 0b00000000			; Reset state.
+	ldi DATAL, 0
+	ldi DATAH, 0
+	ldi MYSTATE, 0b00000000			; Reset state.
 	
 	call INITDISPLAY
 	
 	call show_deflection_header
 	
 	
-	;SEI
+	SEI
 	
 here:	
-	;sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
-	;call set_zeropoint
+	sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
+	call set_zeropoint
 	
-	;sbrc MYSTATE, 6		; Show the current value
-	;call display_current_value
+	sbrc MYSTATE, 6		; Show the current value
+	call show_deflection_line_2
 	
 	jmp here
 
-show_deflection_header:
-	ldi TEMP, 'D'
-	sts C10, TEMP
-	ldi TEMP, 'e'
-	sts C11, TEMP
-	ldi TEMP, 'f'
-	sts C12, TEMP
-	ldi TEMP, 'l'
-	sts C13, TEMP
-	ldi TEMP, 'e'
-	sts C14, TEMP
-	ldi TEMP, 'c'
-	sts C15, TEMP
-	ldi TEMP, 't'
-	sts C16, TEMP
-	ldi TEMP, 'i'
-	sts C17, TEMP
-	ldi TEMP, 'o'
-	sts C18, TEMP
-	ldi TEMP, 'n'
-	sts C19, TEMP
-	ldi TEMP, ':'
-	sts C1A, TEMP
-	ldi TEMP, ' '
-	sts C1B, TEMP
-	ldi TEMP, ' '
-	sts C1C, TEMP
-	ldi TEMP, ' '
-	sts C1D, TEMP
-	ldi TEMP, ' '
-	sts C1E, TEMP
-	ldi TEMP, ' '
-	sts C1E, TEMP
-	call display_line_1
+show_deflection_line_2:
+	call massage_data
+	mov NUM, DATAL
+	call Bin2ascii		; Make current data to ascii
+	lds TEMP1, ASCII_C_3
+	sts C20, TEMP1
+	lds TEMP1, ASCII_C_2
+	sts C21, TEMP1
+	lds TEMP1, ASCII_C_1
+	sts C22, TEMP1
+	ldi TEMP1, ' '
+	sts C23, TEMP1
+	ldi TEMP1, 's'
+	sts C24, TEMP1
+	ldi TEMP1, 't'
+	sts C25, TEMP1
+	ldi TEMP1, 'e'
+	sts C26, TEMP1
+	ldi TEMP1, 'p'
+	sts C27, TEMP1
+	ldi TEMP1, 's'
+	sts C28, TEMP1
+	ldi TEMP1, ' '
+	sts C29, TEMP1
+	ldi TEMP1, ' '
+	sts C2A, TEMP1
+	ldi TEMP1, ' '
+	sts C2B, TEMP1
+	ldi TEMP1, ' '
+	sts C2C, TEMP1
+	ldi TEMP1, ' '
+	sts C2D, TEMP1
+	ldi TEMP1, ' '
+	sts C2E, TEMP1
+	ldi TEMP1, ' '
+	sts C2F, TEMP1
+	call display_line_2
+	cbr MYSTATE, 0b01000000
 	ret
 
+
+adc_int:
+	in DATAL,adcl 	; Lower byte of reading
+	in DATAH,adch 	; Higher byte of reading
+	sbi adcsra,adsc 	; Restart ADC
+	sbr MYSTATE, 0b00100000
+	reti
+
+timer_int:
+	sbr MYSTATE, 0b01000000 		; Time to show the value
+	reti
+
+set_zeropoint:
+	call massage_data
+	mov ZEROPOINT, DATAL
+	cbr MYSTATE, 0b10000000
+	ret
+
+massage_data:	; Makes the data 8-bit instead of 10-bit
+	lsr DATAH
+	ror DATAL
+	lsr DATAH
+	ror DATAL
+	ret
 	
 .include "../includes/lcdFunctions.inc" 	; Include LCD functions
 .include "../includes/bin2ascii.inc"		; Include Binary to Ascii converter function

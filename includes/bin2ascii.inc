@@ -1,43 +1,21 @@
-; bin2ascii registers
-;.def NUM = R20				; Number to convert
-;.def DENOMINATOR = R21
-;.def QUOTIENT = R22
-;.equ ASCII_RESULT = 0x210	; Result
-
-
 Bin2ascii:
-	ldi DENOMINATOR, 10
+	ldi TEMP1, 10
 	rcall Divide
 	ori NUM, 0x30
-	mov ASCII_C_1, NUM
-	mov NUM, QUOTIENT
+	sts ASCII_C_1, NUM
+	mov NUM, TEMP2
 	rcall Divide
 	ori NUM, 0x30
-	mov ASCII_C_2, NUM
-	ori QUOTIENT, 0x30
-	mov ASCII_C_3, QUOTIENT
-	ret
-	
-Bin2asciiOLD:
-;	ldi XL, LOW(ASCII_RESULT)		; Save to here
-;	ldi XH, HIGH(ASCII_RESULT)
-	ldi DENOMINATOR, 10
-	rcall Divide
-	ori NUM, 0x30
-	st X+, NUM
-	mov NUM, QUOTIENT
-	rcall Divide
-	ori NUM, 0x30
-	st X+, NUM
-	ori QUOTIENT, 0x30
-	st X+, QUOTIENT
+	sts ASCII_C_2, NUM
+	ori TEMP2, 0x30
+	sts ASCII_C_3, TEMP2
 	ret
 
 Divide:
-	ldi QUOTIENT,0
-L1:	inc	QUOTIENT
-	sub NUM, DENOMINATOR
+	ldi TEMP2,0
+L1:	inc	TEMP2
+	sub NUM, TEMP1
 	brcc L1
-	dec QUOTIENT
-	add NUM, DENOMINATOR
+	dec TEMP2
+	add NUM, TEMP1
 	ret

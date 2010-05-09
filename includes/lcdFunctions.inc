@@ -17,6 +17,42 @@ INITDISPLAY:
 	call cmdwrt
 	ret
 
+show_deflection_header:
+	ldi TEMP1, 'D'
+	sts C10, TEMP1
+	ldi TEMP1, 'e'
+	sts C11, TEMP1
+	ldi TEMP1, 'f'
+	sts C12, TEMP1
+	ldi TEMP1, 'l'
+	sts C13, TEMP1
+	ldi TEMP1, 'e'
+	sts C14, TEMP1
+	ldi TEMP1, 'c'
+	sts C15, TEMP1
+	ldi TEMP1, 't'
+	sts C16, TEMP1
+	ldi TEMP1, 'i'
+	sts C17, TEMP1
+	ldi TEMP1, 'o'
+	sts C18, TEMP1
+	ldi TEMP1, 'n'
+	sts C19, TEMP1
+	ldi TEMP1, ':'
+	sts C1A, TEMP1
+	ldi TEMP1, ' '
+	sts C1B, TEMP1
+	ldi TEMP1, ' '
+	sts C1C, TEMP1
+	ldi TEMP1, ' '
+	sts C1D, TEMP1
+	ldi TEMP1, ' '
+	sts C1E, TEMP1
+	ldi TEMP1, ' '
+	sts C1F, TEMP1
+	call display_line_1
+	ret
+
 display_line_1:
 	ldi DISPLAY_DATA,0x80		; Move to line 1
 	call cmdwrt
@@ -55,11 +91,49 @@ display_line_1:
 	call datawrt
 	ret
 
-display_message_at_pos:
-	mov DISPLAY_DATA,POS	; Position on LCD. 
+display_line_2:
+	ldi DISPLAY_DATA,0xC0		; Move to line 2
 	call cmdwrt
-	call display_message
+	call delay_2ms
+	lds DISPLAY_DATA, C20
+	call datawrt
+	lds DISPLAY_DATA, C21
+	call datawrt
+	lds DISPLAY_DATA, C22
+	call datawrt
+	lds DISPLAY_DATA, C23
+	call datawrt
+	lds DISPLAY_DATA, C24
+	call datawrt
+	lds DISPLAY_DATA, C25
+	call datawrt
+	lds DISPLAY_DATA, C26
+	call datawrt
+	lds DISPLAY_DATA, C27
+	call datawrt
+	lds DISPLAY_DATA, C28
+	call datawrt
+	lds DISPLAY_DATA, C29
+	call datawrt
+	lds DISPLAY_DATA, C2A
+	call datawrt
+	lds DISPLAY_DATA, C2B
+	call datawrt
+	lds DISPLAY_DATA, C2C
+	call datawrt
+	lds DISPLAY_DATA, C2D
+	call datawrt
+	lds DISPLAY_DATA, C2E
+	call datawrt
+	lds DISPLAY_DATA, C2F
+	call datawrt
 	ret
+
+;display_message_at_pos:
+;	mov DISPLAY_DATA,POS	; Position on LCD. 
+;	call cmdwrt
+;	call display_message
+;	ret
 	
 display_message:
 	LPM DISPLAY_DATA,Z+
