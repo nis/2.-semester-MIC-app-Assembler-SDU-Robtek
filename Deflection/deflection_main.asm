@@ -27,147 +27,140 @@
 .def MYSTATE = R29		; State register:
 						; | 7 zerocycle set if run | 6 show result if set | 5 ADC has been run | ...
 
+.equ C10	= 0x220		; Line 1
+.equ C11	= 0x221		; 
+.equ C12	= 0x222		; 
+.equ C13	= 0x223		; 
+.equ C14	= 0x224		; 
+.equ C15	= 0x225		; 
+.equ C16	= 0x226		; 
+.equ C17	= 0x227		; 
+.equ C18	= 0x228		; 
+.equ C19	= 0x229		; 
+.equ C1A	= 0x22A		; 
+.equ C1B	= 0x22B		; 
+.equ C1C	= 0x22C		; 
+.equ C1D	= 0x22D		; 
+.equ C1E	= 0x22E		; 
+.equ C1F	= 0x22F		; 
+
+.equ C20	= 0x230		; Line 2
+.equ C21	= 0x231		; 
+.equ C22	= 0x232		; 
+.equ C23	= 0x233		; 
+.equ C24	= 0x234		; 
+.equ C25	= 0x235		; 
+.equ C26	= 0x236		; 
+.equ C27	= 0x237		; 
+.equ C28	= 0x238		; 
+.equ C29	= 0x239		; 
+.equ C2A	= 0x23A		; 
+.equ C2B	= 0x23B		; 
+.equ C2C	= 0x23C		; 
+.equ C2D	= 0x23D		; 
+.equ C2E	= 0x23E		; 
+.equ C2F	= 0x23F		;
+
 .org 0x00
 	jmp Main
 .org 0x02
 	jmp Main
-.org 0x14
-	jmp timer_int
-.org ADCCaddr
-	jmp adc_int
+;.org 0x14
+;	jmp timer_int
+;.org ADCCaddr
+;	jmp adc_int
 
 .org 0x100
 	
 Main:	
-	cli
+	;cli
 	ldi TEMP,high(RAMEND) ; Init stack
 	out SPH,TEMP
 	ldi TEMP,low(RAMEND)
 	out SPL,TEMP
 	
-	SBI PORTD,2		; Init INT0-knap
-	LDI TEMP,1<<INT0
-	OUT GICR,TEMP
+	;SBI PORTD,2		; Init INT0-knap
+	;LDI TEMP,1<<INT0
+	;OUT GICR,TEMP
 	
-	ldi TEMP,0b10001010
-	out adcsra,TEMP		; enable ADC og ck/128
-	ldi TEMP,0b11000000
-	out admux,TEMP		; loader admux
-
-	sbi adcsra,adsc	; start konvertering
+	;ldi TEMP,0b10001010
+	;out adcsra,TEMP		; enable ADC og ck/128
+	;ldi TEMP,0b11000000
+	;out admux,TEMP		; loader admux
+    ;
+	;sbi adcsra,adsc	; start konvertering
+	;
+	;ldi TEMP,(1<<OCIE1A)
+  	;out TIMSK,TEMP  ; Enable Timer1 match Interrupt
+  	;ldi TEMP,0x0
+  	;out TCCR1A,TEMP
+  	;ldi TEMP,0xD
+  	;out TCCR1B,TEMP ; Prescaler 1:1024, CTC mode
+  	;ldi TEMP,HIGH(timer_t) ; High byte
+  	;OUT OCR1AH,TEMP
+  	;ldi TEMP,LOW(timer_t) ; Low byte
+  	;OUT OCR1AL,TEMP
+  	;ldi TEMP,0x0
 	
-	ldi TEMP,(1<<OCIE1A)
-  	out TIMSK,TEMP  ; Enable Timer1 match Interrupt
-  	ldi TEMP,0x0
-  	out TCCR1A,TEMP
-  	ldi TEMP,0xD
-  	out TCCR1B,TEMP ; Prescaler 1:1024, CTC mode
-  	ldi TEMP,HIGH(timer_t) ; High byte
-  	OUT OCR1AH,TEMP
-  	ldi TEMP,LOW(timer_t) ; Low byte
-  	OUT OCR1AL,TEMP
-  	ldi TEMP,0x0
-	
-	ldi ASCII_C_1, 0x30		; Init Ascii cifres.
-	ldi ASCII_C_2, 0x30
-	ldi ASCII_C_3, 0x30
-	ldi READINGL, 0
-	ldi READINGH, 0
-	ldi MYSTATE, 0b00000000			; Reset state.
+	;ldi ASCII_C_1, 0x30		; Init Ascii cifres.
+	;ldi ASCII_C_2, 0x30
+	;ldi ASCII_C_3, 0x30
+	;ldi READINGL, 0
+	;ldi READINGH, 0
+	;ldi MYSTATE, 0b00000000			; Reset state.
 	
 	call INITDISPLAY
 	
-	call display_deflection_header
+	call show_deflection_header
 	
-	SEI
+	
+	;SEI
 	
 here:	
-	sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
-	call set_zeropoint
+	;sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
+	;call set_zeropoint
 	
-	sbrc MYSTATE, 6		; Show the current value
-	call display_current_value
+	;sbrc MYSTATE, 6		; Show the current value
+	;call display_current_value
 	
 	jmp here
 
-set_zeropoint:
-	lsr READINGH	; Divider med 2
-	ror READINGL
-	lsr READINGH	; Divider med 4
-	ror READINGL
-	mov ZEROPOINT, READINGL
-	cbr MYSTATE, 0b10000000
+show_deflection_header:
+	ldi TEMP, 'D'
+	sts C10, TEMP
+	ldi TEMP, 'e'
+	sts C11, TEMP
+	ldi TEMP, 'f'
+	sts C12, TEMP
+	ldi TEMP, 'l'
+	sts C13, TEMP
+	ldi TEMP, 'e'
+	sts C14, TEMP
+	ldi TEMP, 'c'
+	sts C15, TEMP
+	ldi TEMP, 't'
+	sts C16, TEMP
+	ldi TEMP, 'i'
+	sts C17, TEMP
+	ldi TEMP, 'o'
+	sts C18, TEMP
+	ldi TEMP, 'n'
+	sts C19, TEMP
+	ldi TEMP, ':'
+	sts C1A, TEMP
+	ldi TEMP, ' '
+	sts C1B, TEMP
+	ldi TEMP, ' '
+	sts C1C, TEMP
+	ldi TEMP, ' '
+	sts C1D, TEMP
+	ldi TEMP, ' '
+	sts C1E, TEMP
+	ldi TEMP, ' '
+	sts C1E, TEMP
+	call display_line_1
 	ret
 
-adc_int:
-	in READINGL,adcl 	; Lower byte of reading
-	in READINGH,adch 	; Higher byte of reading
-	sbi adcsra,adsc 	; Restart ADC
-	sbr MYSTATE, 0b00100000
-	reti
-
-timer_int:
-	sbr MYSTATE, 0b01000000 		; Time to show the value
-	reti
-
-display_current_value:
-	lsr READINGH	; Divider med 2
-	ror READINGL
-	lsr READINGH	; Divider med 4
-	ror READINGL
-	mov NUM, READINGL
-	
-	ldi DISPLAY_DATA, 0xC0
-	call cmdwrt
-	call delay_2ms
-	
-	;call show_negative_number
-	
-	cp NUM, ZEROPOINT
-	brlo negative_number 		; Branch to display a positive number
-
-positive_number:
-	sub NUM, ZEROPOINT
-	rjmp display_it
-		
-negative_number:
-	LDI R31,HIGH(MINUS_SIGN<<1)		;
-	LDI R30,LOW(MINUS_SIGN<<1)		; Display the minus-sign
-	call display_message
-	;mov TEMP, ZEROPOINT
-	;sub TEMP, NUM
-	;mov NUM, TEMP
-	rjmp display_it			
-	
-display_it:
-	call display_value
-	ret
-
-
-display_value:
-	call Bin2ascii
-	mov	DISPLAY_DATA, ASCII_C_3
-	call datawrt
-	call delay_2ms
-	mov	DISPLAY_DATA, ASCII_C_2
-	call datawrt
-	call delay_2ms
-	mov	DISPLAY_DATA, ASCII_C_1
-	call datawrt
-	call delay_2ms
-	LDI R31,HIGH(SPACE<<1)		;
-	LDI R30,LOW(SPACE<<1)		; Display the space
-	call display_message
-	cbr MYSTATE, 0b01000000
-	ret
-
-display_deflection_header:
-	ldi POS, 0x80
-	LDI R31,HIGH(LINE_1<<1)
-	LDI R30,LOW(LINE_1<<1)		; Z points to HELLO_WORLD
-	call display_message_at_pos
-	ret
 	
 .include "../includes/lcdFunctions.inc" 	; Include LCD functions
-.include "../includes/strings.inc"			; Include strings
 .include "../includes/bin2ascii.inc"		; Include Binary to Ascii converter function

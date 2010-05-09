@@ -5,6 +5,6 @@
 ;MSG_2:			.DB "Ahhhhh! Dejligt :)",0
 
 ; Deflection strings
-LINE_1:			.db "Deflection:", 0
-MINUS_SIGN:		.db "-", 0
-SPACE:			.db " ", 0
+DEFLECTION_HEADER:			.db "Deflection:     ", 0
+MINUS_SIGN:					.db "-", 0
+SPACE:						.db " ", 0

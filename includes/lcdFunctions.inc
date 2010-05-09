@@ -17,6 +17,44 @@ INITDISPLAY:
 	call cmdwrt
 	ret
 
+display_line_1:
+	ldi DISPLAY_DATA,0x80		; Move to line 1
+	call cmdwrt
+	call delay_2ms
+	lds DISPLAY_DATA, C10
+	call datawrt
+	lds DISPLAY_DATA, C11
+	call datawrt
+	lds DISPLAY_DATA, C12
+	call datawrt
+	lds DISPLAY_DATA, C13
+	call datawrt
+	lds DISPLAY_DATA, C14
+	call datawrt
+	lds DISPLAY_DATA, C15
+	call datawrt
+	lds DISPLAY_DATA, C16
+	call datawrt
+	lds DISPLAY_DATA, C17
+	call datawrt
+	lds DISPLAY_DATA, C18
+	call datawrt
+	lds DISPLAY_DATA, C19
+	call datawrt
+	lds DISPLAY_DATA, C1A
+	call datawrt
+	lds DISPLAY_DATA, C1B
+	call datawrt
+	lds DISPLAY_DATA, C1C
+	call datawrt
+	lds DISPLAY_DATA, C1D
+	call datawrt
+	lds DISPLAY_DATA, C1E
+	call datawrt
+	lds DISPLAY_DATA, C1F
+	call datawrt
+	ret
+
 display_message_at_pos:
 	mov DISPLAY_DATA,POS	; Position on LCD. 
 	call cmdwrt
