@@ -26,6 +26,7 @@
 .equ ASCII_C_1 = 0x210
 .equ ASCII_C_2 = 0x211
 .equ ASCII_C_3 = 0x212
+.equ DATA_SIGN = 0x213
 
 .equ C10	= 0x220		; Line 1
 .equ C11	= 0x221		; 
@@ -121,33 +122,51 @@ here:
 	call set_zeropoint
 	
 	sbrc MYSTATE, 6		; Show the current value
-	call show_deflection_line_2
+	call show_deflection_steps_line_2
 	
 	jmp here
 
-show_deflection_line_2:
+offset_data:
+	cp NUM, ZEROPOINT
+	brlo negative_number
+positive_number:
+	sub NUM, ZEROPOINT
+	ldi TEMP1, ' '
+	sts DATA_SIGN, TEMP1
+	rjmp done_offsetting
+negative_number:
+	mov TEMP1, ZEROPOINT
+	sub TEMP1, NUM
+	mov NUM, TEMP1
+	ldi TEMP1, '-'
+	sts DATA_SIGN, TEMP1
+done_offsetting:
+	ret
+
+show_deflection_steps_line_2:
 	call massage_data
 	mov NUM, DATAL
+	call offset_data
 	call Bin2ascii		; Make current data to ascii
-	lds TEMP1, ASCII_C_3
+	lds TEMP1, DATA_SIGN
 	sts C20, TEMP1
-	lds TEMP1, ASCII_C_2
+	lds TEMP1, ASCII_C_3
 	sts C21, TEMP1
-	lds TEMP1, ASCII_C_1
+	lds TEMP1, ASCII_C_2
 	sts C22, TEMP1
-	ldi TEMP1, ' '
+	lds TEMP1, ASCII_C_1
 	sts C23, TEMP1
-	ldi TEMP1, 's'
-	sts C24, TEMP1
-	ldi TEMP1, 't'
-	sts C25, TEMP1
-	ldi TEMP1, 'e'
-	sts C26, TEMP1
-	ldi TEMP1, 'p'
-	sts C27, TEMP1
-	ldi TEMP1, 's'
-	sts C28, TEMP1
 	ldi TEMP1, ' '
+	sts C24, TEMP1
+	ldi TEMP1, 's'
+	sts C25, TEMP1
+	ldi TEMP1, 't'
+	sts C26, TEMP1
+	ldi TEMP1, 'e'
+	sts C27, TEMP1
+	ldi TEMP1, 'p'
+	sts C28, TEMP1
+	ldi TEMP1, 's'
 	sts C29, TEMP1
 	ldi TEMP1, ' '
 	sts C2A, TEMP1
