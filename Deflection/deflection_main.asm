@@ -17,6 +17,9 @@
 .def ConDATAH = R18		; Put the number to be converted in here
 .def ConDATAL = R17		;
 
+; Bin2Ascii converter
+; Also uses TEMP1 & TEMP2
+.def NUM = R22
 
 ; Memory
 .equ DATAH = 0x210		; Data from the ADC
@@ -25,7 +28,12 @@
 .equ ZPOINTH = 0x212	; Zeropoint
 .equ ZPOINTL = 0x213	;
 
-.equ DATA_SIGN = 0x214	; The sign of the data here. " " for positive, "-" for negative (Ascii)
+.equ DATA_SIGN_10_BIT = 0x214	; The sign of the 10-bit data result here. " " for positive, "-" for negative (Ascii)
+.equ DATA_SIGN_8_BIT = 0x215	; The sign of the 8-bit data result here. " " for positive, "-" for negative (Ascii)
+
+.equ ASCII_C_1 = 0x216	; Used for the ASCII result for the steps
+.equ ASCII_C_2 = 0x217	; Man, my comments rock. You have no idea what the above line means, right?
+.equ ASCII_C_3 = 0x218	;
 
 .equ C10	= 0x220		; Line 1 (Ascii)
 .equ C11	= 0x221		; 
@@ -105,11 +113,12 @@ Main:
 	; Initiate some of my data
 	ldi MYSTATE, 0b00000000			; Reset state.
 	ldi TEMP1, ' '					; Save sign.
-	sts DATA_SIGN, TEMP1			; 
+	sts DATA_SIGN_10_BIT, TEMP1		;
+	sts DATA_SIGN_8_BIT, TEMP1		;
 	
 	call INITDISPLAY
 	
-	call show_deflection_header
+	;call show_deflection_header
 	
 	SEI
 	
@@ -118,47 +127,57 @@ here:
 	call set_zeropoint
 	
 	sbrc MYSTATE, 6		; Show the current value
-	call show_volts_line_2
+	call rebuild_display
 	;call show_deflection_steps_line_2
 	
 	jmp here
 
-show_volts_line_2:
-	;lds ConDATAH, DATAH
-	;lds ConDATAL, DATAL
-	call offset_data
-	call fpconv10
+rebuild_display:
+	call build_volts			; Build the part of the display that shows the voltage
 	
-	lds TEMP1, DATA_SIGN
-	sts C20, TEMP1
-	sts C21, R21
-	sts C22, R22
-	sts C23, R23
-	sts C24, R24
-	sts C25, R25
-	ldi TEMP1, 'V'
-	sts C26, TEMP1
-	ldi TEMP1, '.'
-	sts C27, TEMP1
-	ldi TEMP1, ' '
-	sts C28, TEMP1
-	ldi TEMP1, ' '
-	sts C29, TEMP1
-	ldi TEMP1, ' '
-	sts C2A, TEMP1
-	ldi TEMP1, ' '
-	sts C2B, TEMP1
-	ldi TEMP1, ' '
-	sts C2C, TEMP1
-	ldi TEMP1, ' '
-	sts C2D, TEMP1
-	ldi TEMP1, ' '
-	sts C2E, TEMP1
-	ldi TEMP1, ' '
-	sts C2F, TEMP1
-	call display_line_2
+	ldi TEMP1, ' '				; One char for spacing.
+	sts C18, TEMP1				;
+	
+	call build_steps			; Build the part that shows the 8-bit steps
+
+	call display_line_1
 	cbr MYSTATE, 0b01000000
+	ret
+
+build_steps:
+	call offset_data_8_bit		; Offset the data, 8-bit.
+	call Bin2ascii				; Build the ASCII result
+	ldi TEMP1, ' '				; Load the chars into RAM
+	sts C19, TEMP1
+	lds TEMP1, DATA_SIGN_8_BIT
+	sts C1A, TEMP1
+	lds TEMP1, ASCII_C_3
+	sts C1B, TEMP1
+	lds TEMP1, ASCII_C_2
+	sts C1C, TEMP1
+	lds TEMP1, ASCII_C_1
+	sts C1D, TEMP1
+	ldi TEMP1, ' '
+	sts C1E, TEMP1
+	ldi TEMP1, 'S'
+	sts C1F, TEMP1
+	ret
+
+build_volts:
+	call offset_data_10_bit		; Offset the data with the Zeropoint
+	call fpconv10				; Convert the data to ASCII
 	
+	lds TEMP1, DATA_SIGN_10_BIT	; Load the chars into RAM
+	sts C10, TEMP1
+	sts C11, R21
+	sts C12, R22
+	sts C13, R23
+	sts C14, R24
+	sts C15, R25
+	ldi TEMP1, ' '
+	sts C16, TEMP1
+	ldi TEMP1, 'V'
+	sts C17, TEMP1
 	ret
 
 
@@ -187,7 +206,42 @@ set_zeropoint:
 	cbr MYSTATE, 0b10000000
 	ret
 
-offset_data:
+offset_data_8_bit:
+	lds TEMP1, ZPOINTH			; Load the Zeropoint
+	lds TEMP2, ZPOINTL			;
+	
+	lsr TEMP1					; Make Zeropoint 8-bit.
+	ror TEMP2					
+	lsr TEMP1	
+	ror TEMP2
+	mov R22, TEMP2				; Zeropoint in R22
+	
+	lds TEMP1, DATAH			; Load the data
+	lds TEMP2, DATAL			;
+	
+	lsr TEMP1					; Make Data 8-bit.
+	ror TEMP2					
+	lsr TEMP1	
+	ror TEMP2					; Data in TEMP2
+	
+	cp TEMP2, R22
+	brlo negative_number
+positive_number:
+	sub TEMP2, R22
+	ldi TEMP1, ' '
+	sts DATA_SIGN_8_BIT, TEMP1
+	rjmp done_offsetting
+negative_number:
+	mov TEMP1, R22
+	sub TEMP1, TEMP2
+	mov TEMP2, TEMP1
+	ldi TEMP1, '-'
+	sts DATA_SIGN_8_BIT, TEMP1
+done_offsetting:
+	mov NUM, TEMP2				; Result in NUM
+	ret
+
+offset_data_10_bit:
 	lds TEMP1, ZPOINTH			; Load the Zeropoint
 	lds TEMP2, ZPOINTL			;
 	lds ConDATAH, DATAH			; Load the data
@@ -199,20 +253,20 @@ positive_result:
 	SUB ConDATAL, TEMP2			; I subtract the Zeropoint from the data.
 	SBC ConDATAH, TEMP1			; first the low-byte, then the high-byte, result in ConDATAx
 	ldi TEMP1, ' '				; Load sign.
-	sts DATA_SIGN, TEMP1		; Save sign
-	rjmp done_offsetting		; Done.
+	sts DATA_SIGN_10_BIT, TEMP1	; Save sign
+	rjmp done_offsetting_10_bit	; Done.
 negative_result:
 	SUB TEMP2, ConDATAL			; We subtract the data from the zeropoint.
 	SBC TEMP1, ConDATAH			; first the low-byte, then the high-byte, result in TEMPx
 	mov ConDATAH, TEMP1			; Save the result
 	mov ConDATAL, TEMP2			;
 	ldi TEMP1, '-'				; Load sign.
-	sts DATA_SIGN, TEMP1		; Save sign
-	rjmp done_offsetting		; Done.
-done_offsetting:
+	sts DATA_SIGN_10_BIT, TEMP1	; Save sign
+	rjmp done_offsetting_10_bit	; Done.
+done_offsetting_10_bit:
 	ret
 
 .include "../includes/lcdFunctions.inc" 	; Include LCD functions	
 ;.include "../includes/data_functions.inc" 	; Include LCD functions
-;.include "../includes/bin2ascii.inc"		; Include Binary to Ascii converter function
+.include "../includes/bin2ascii.inc"		; Include Binary to Ascii converter function
 .include "../includes/bin2DecAscii.inc" 	; Include LCD functions
