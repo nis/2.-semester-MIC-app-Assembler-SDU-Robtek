@@ -14,13 +14,16 @@
 							;	5 ADC has been run
 
 ; Bin2DecAscii converter:
-.def ConDATAH = R18
-.def ConDATAL = R17
+.def ConDATAH = R18		; Put the number to be converted in here
+.def ConDATAL = R17		;
 
 
 ; Memory
 .equ DATAH = 0x210		; Data from the ADC
 .equ DATAL = 0x211		;
+
+.equ ZPOINTH = 0x212	; Zeropoint
+.equ ZPOINTL = 0x213	;
 
 .equ C10	= 0x220		; Line 1
 .equ C11	= 0x221		; 
@@ -104,57 +107,11 @@ Main:
 	
 	call show_deflection_header
 	
-	;ldi NUM, 0b1010
-	;call massage_data
-	
-	;ldi DECIMAL, 0
-	;call divide_binary_decimal_by_two
-	;call Bin2ascii
-	;call Bin2ascii_dec
-	;call left_shift_decimal
-	;call left_shift_decimal
-	;call clean_decimal
-	;call clean_num
-	
-	;ldi TEMP1, ' '
-	;sts C20, TEMP1
-	;lds TEMP1, ASCII_C_3
-	;sts C21, TEMP1
-	;lds TEMP1, ASCII_C_2
-	;sts C22, TEMP1
-	;lds TEMP1, ASCII_C_1
-	;sts C23, TEMP1
-	;ldi TEMP1, ','
-	;sts C24, TEMP1
-	;lds TEMP1, ASCII_D_3
-	;sts C25, TEMP1
-	;lds TEMP1, ASCII_D_2
-	;sts C26, TEMP1
-	;lds TEMP1, ASCII_D_1
-	;sts C27, TEMP1
-	;ldi TEMP1, ' '
-	;sts C28, TEMP1
-	;ldi TEMP1, 'v'
-	;sts C29, TEMP1
-	;ldi TEMP1, 'o'
-	;sts C2A, TEMP1
-	;ldi TEMP1, 'l'
-	;sts C2B, TEMP1
-	;ldi TEMP1, 't'
-	;sts C2C, TEMP1
-	;ldi TEMP1, ' '
-	;sts C2D, TEMP1
-	;ldi TEMP1, ' '
-	;sts C2E, TEMP1
-	;ldi TEMP1, ' '
-	;sts C2F, TEMP1
-	;call display_line_2
-	
 	SEI
 	
 here:	
-	;sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
-	;call set_zeropoint
+	sbrs MYSTATE, 5		; ADC has been run once, so the zeropoint is set.
+	call set_zeropoint
 	
 	sbrc MYSTATE, 6		; Show the current value
 	call show_volts_line_2
@@ -217,11 +174,13 @@ timer_int:
 	sbr MYSTATE, 0b01000000 		; Time to show the value
 	reti
 
-;set_zeropoint:
-;	call massage_data
-;	mov ZEROPOINT, DATAL
-;	cbr MYSTATE, 0b10000000
-;	ret
+set_zeropoint:
+	lds TEMP1, DATAH
+	sts ZPOINTH, TEMP1
+	lds TEMP1, DATAL
+	sts ZPOINTL, TEMP1
+	cbr MYSTATE, 0b10000000
+	ret
 	
 .include "../includes/lcdFunctions.inc" 	; Include LCD functions	
 ;.include "../includes/data_functions.inc" 	; Include LCD functions
