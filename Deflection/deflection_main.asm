@@ -25,7 +25,9 @@
 .equ ZPOINTH = 0x212	; Zeropoint
 .equ ZPOINTL = 0x213	;
 
-.equ C10	= 0x220		; Line 1
+.equ DATA_SIGN = 0x214	; The sign of the data here. " " for positive, "-" for negative (Ascii)
+
+.equ C10	= 0x220		; Line 1 (Ascii)
 .equ C11	= 0x221		; 
 .equ C12	= 0x222		; 
 .equ C13	= 0x223		; 
@@ -42,7 +44,7 @@
 .equ C1E	= 0x22E		; 
 .equ C1F	= 0x22F		; 
 
-.equ C20	= 0x230		; Line 2
+.equ C20	= 0x230		; Line 2 (Ascii)
 .equ C21	= 0x231		; 
 .equ C22	= 0x232		; 
 .equ C23	= 0x233		; 
@@ -100,8 +102,10 @@ Main:
   	OUT OCR1AL,TEMP1
   	ldi TEMP1, 0x0
 	
-	; Initiate some of my variables
+	; Initiate some of my data
 	ldi MYSTATE, 0b00000000			; Reset state.
+	ldi TEMP1, ' '					; Save sign.
+	sts DATA_SIGN, TEMP1			; 
 	
 	call INITDISPLAY
 	
@@ -120,11 +124,12 @@ here:
 	jmp here
 
 show_volts_line_2:
-	lds ConDATAH, DATAH
-	lds ConDATAL, DATAL
+	;lds ConDATAH, DATAH
+	;lds ConDATAL, DATAL
+	call offset_data
 	call fpconv10
 	
-	ldi TEMP1, ' '
+	lds TEMP1, DATA_SIGN
 	sts C20, TEMP1
 	sts C21, R21
 	sts C22, R22
@@ -181,7 +186,32 @@ set_zeropoint:
 	sts ZPOINTL, TEMP1
 	cbr MYSTATE, 0b10000000
 	ret
-	
+
+offset_data:
+	lds TEMP1, ZPOINTH			; Load the Zeropoint
+	lds TEMP2, ZPOINTL			;
+	lds ConDATAH, DATAH			; Load the data
+	lds ConDATAL, DATAL			;
+	CP ConDATAL, TEMP2 			; Compare two 16-bit words
+	CPC ConDATAH, TEMP1 		; If carry-flag is set, ConDATAx is the biggest
+	brcs negative_result		; 
+positive_result:
+	SUB ConDATAL, TEMP2			; I subtract the Zeropoint from the data.
+	SBC ConDATAH, TEMP1			; first the low-byte, then the high-byte, result in ConDATAx
+	ldi TEMP1, ' '				; Load sign.
+	sts DATA_SIGN, TEMP1		; Save sign
+	rjmp done_offsetting		; Done.
+negative_result:
+	SUB TEMP2, ConDATAL			; We subtract the data from the zeropoint.
+	SBC TEMP1, ConDATAH			; first the low-byte, then the high-byte, result in TEMPx
+	mov ConDATAH, TEMP1			; Save the result
+	mov ConDATAL, TEMP2			;
+	ldi TEMP1, '-'				; Load sign.
+	sts DATA_SIGN, TEMP1		; Save sign
+	rjmp done_offsetting		; Done.
+done_offsetting:
+	ret
+
 .include "../includes/lcdFunctions.inc" 	; Include LCD functions	
 ;.include "../includes/data_functions.inc" 	; Include LCD functions
 ;.include "../includes/bin2ascii.inc"		; Include Binary to Ascii converter function
