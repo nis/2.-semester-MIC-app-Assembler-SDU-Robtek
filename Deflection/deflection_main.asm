@@ -228,14 +228,14 @@ offset_data_8_bit:
 	brlo negative_number
 positive_number:
 	sub TEMP2, R22
-	ldi TEMP1, ' '
+	ldi TEMP1, '-'
 	sts DATA_SIGN_8_BIT, TEMP1
 	rjmp done_offsetting
 negative_number:
 	mov TEMP1, R22
 	sub TEMP1, TEMP2
 	mov TEMP2, TEMP1
-	ldi TEMP1, '-'
+	ldi TEMP1, ' '
 	sts DATA_SIGN_8_BIT, TEMP1
 done_offsetting:
 	mov NUM, TEMP2				; Result in NUM
@@ -252,7 +252,7 @@ offset_data_10_bit:
 positive_result:
 	SUB ConDATAL, TEMP2			; I subtract the Zeropoint from the data.
 	SBC ConDATAH, TEMP1			; first the low-byte, then the high-byte, result in ConDATAx
-	ldi TEMP1, ' '				; Load sign.
+	ldi TEMP1, '-'				; Load sign.
 	sts DATA_SIGN_10_BIT, TEMP1	; Save sign
 	rjmp done_offsetting_10_bit	; Done.
 negative_result:
@@ -260,7 +260,7 @@ negative_result:
 	SBC TEMP1, ConDATAH			; first the low-byte, then the high-byte, result in TEMPx
 	mov ConDATAH, TEMP1			; Save the result
 	mov ConDATAL, TEMP2			;
-	ldi TEMP1, '-'				; Load sign.
+	ldi TEMP1, ' '				; Load sign.
 	sts DATA_SIGN_10_BIT, TEMP1	; Save sign
 	rjmp done_offsetting_10_bit	; Done.
 done_offsetting_10_bit:
