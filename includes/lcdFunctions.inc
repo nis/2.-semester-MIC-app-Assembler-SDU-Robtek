@@ -8,13 +8,13 @@ INITDISPLAY:
 	ldi DISPLAY_DATA,0x38		; lcd 5x7 matrix 2 linier
 	call cmdwrt
 	call delay_2ms
-	ldi DISPLAY_DATA,0x0C		; display tændt, cursor on
+	ldi DISPLAY_DATA,0x0C		; display tændt, cursor off
 	call cmdwrt
 	ldi DISPLAY_DATA,0x01		; clear lcd
 	call cmdwrt
-	call delay_2ms
-	ldi DISPLAY_DATA,0x06		; shift cursor right
-	call cmdwrt
+;	call delay_2ms
+;	ldi DISPLAY_DATA,0x06		; shift cursor right
+;	call cmdwrt
 	ret
 
 show_deflection_header:
