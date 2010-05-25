@@ -1,5 +1,5 @@
-.include "../includes/m32def.inc"		; Change path to fit your system
-.include "../includes/definitions.inc"	; Display definitions.
+.include "includes/m32def.inc"		; Change path to fit your system
+.include "includes/definitions.inc"	; Display definitions.
 
 .org 0x00							; Interrupt vectors
 	jmp Main
@@ -195,6 +195,6 @@ negative_result:
 done_offsetting_10_bit:
 	ret
 
-.include "../includes/lcdFunctions.inc" 	; Include LCD functions	
-.include "../includes/bin2ascii.inc"		; Include Binary to Ascii converter function
-.include "../includes/bin2DecAscii.inc" 	; Include LCD functions
+.include "includes/lcdFunctions.inc" 	; Include LCD functions	
+.include "includes/bin2ascii.inc"		; Include Binary to Ascii converter function
+.include "includes/bin2DecAscii.inc" 	; Include LCD functions
