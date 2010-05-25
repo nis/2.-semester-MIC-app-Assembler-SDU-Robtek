@@ -12,9 +12,9 @@ INITDISPLAY:
 	call cmdwrt
 	ldi DISPLAY_DATA,0x01		; clear lcd
 	call cmdwrt
-;	call delay_2ms
-;	ldi DISPLAY_DATA,0x06		; shift cursor right
-;	call cmdwrt
+	call delay_2ms
+	ldi DISPLAY_DATA,0x06		; shift cursor right
+	call cmdwrt
 	ret
 
 show_deflection_header:
